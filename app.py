@@ -3,7 +3,7 @@ from flask_cors import CORS  # Import CORS
 import joblib
 
 app = Flask(__name__)
-CORS(app, resources={r"/predict": {"origins": ["https://coduri-ati.vercel.app/", "http://localhost:3000"]}})
+CORS(app, resources={r"/predict": {"origins": "https://coduri-ati.vercel.app"}})
 
 # Load the Naive Bayes model
 model = joblib.load('naive_bayes_model.pkl')
@@ -14,8 +14,16 @@ vectorizer = joblib.load('count_vectorizer.pkl')
 # Load the classes
 classes = joblib.load('classes.pkl')
 
-@app.route('/predict', methods=['POST'])
+@app.route('/predict', methods=['POST', 'OPTIONS'])
 def predict():
+    if request.method == 'OPTIONS':
+        headers = {
+            'Access-Control-Allow-Origin': 'https://coduri-ati.vercel.app',
+            'Access-Control-Allow-Methods': 'POST',
+            'Access-Control-Allow-Headers': 'Content-Type',
+        }
+        return ('', 204, headers)
+
     data = request.get_json()
     product_name = data['product_name']
 
@@ -28,7 +36,10 @@ def predict():
     # Map predicted category index to the actual category label
     predicted_category = str(predicted_category_index)  # Convert to string to ensure compatibility with JSON response
 
-    return jsonify({'category': predicted_category})
+    response = jsonify({'category': predicted_category})
+    response.headers.add('Access-Control-Allow-Origin', 'https://coduri-ati.vercel.app')
+    return response
+
 @app.route('/add_data', methods=['POST'])
 def add_data():
     data = request.get_json()
@@ -56,4 +67,4 @@ def page_not_found(e):
     return jsonify({"status": 404, "message": "Not Found"}), 404
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True) 
